@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'path_planner = engineers_leader_follower.path_planner:main',
         ],
     },
 )
