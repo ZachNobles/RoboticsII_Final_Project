@@ -1,3 +1,5 @@
+from platform import node
+
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -11,8 +13,8 @@ class PathPlanner(Node):
 
         self.get_logger().info(f"{self.get_name()} has been started")
 
-        self.robot1_publisher = self.create_publisher(Twist, "robot1/raw_vel", 10)
-        self.robot2_publisher = self.create_publisher(Twist, "robot2/raw_vel", 10)
+        self.robot1_publisher = self.create_publisher(Twist, "robot1/vel_raw", 10)
+        self.robot2_publisher = self.create_publisher(Twist, "robot2/vel_raw", 10)
 
         self.goal_points = [
             (1.0, 5.0),
@@ -82,17 +84,15 @@ class PathPlanner(Node):
 
 
 
-
-
-
-
-
 def main(args=None):
     rclpy.init(args=args)
 
     path_planner = PathPlanner()
 
-    rclpy.spin(path_planner)
+    try:
+        rclpy.spin(path_planner)
+    except KeyboardInterrupt:
+        path_planner.get_logger().info('Interrupt received, shutting down')
 
     path_planner.destroy_node()
     rclpy.shutdown()
