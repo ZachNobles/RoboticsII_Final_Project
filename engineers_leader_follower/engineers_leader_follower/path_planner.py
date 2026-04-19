@@ -13,8 +13,8 @@ class PathPlanner(Node):
 
         self.get_logger().info(f"{self.get_name()} has been started")
 
-        self.robot1_publisher = self.create_publisher(Twist, "robot1/vel_raw", 10)
-        self.robot2_publisher = self.create_publisher(Twist, "robot2/vel_raw", 10)
+        self.robot1_publisher = self.create_publisher(Twist, "/robot1/vel_raw", 10)
+        self.robot2_publisher = self.create_publisher(Twist, "/robot2/vel_raw", 10)
 
         self.goal_points = [
             (1.0, 5.0),
