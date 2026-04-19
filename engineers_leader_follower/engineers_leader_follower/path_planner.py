@@ -7,7 +7,10 @@ import numpy as np
 
 class PathPlanner(Node):
     def __init__(self):
-        super().__init__("path planner")
+        super().__init__("path_planner")
+
+        self.get_logger().info(f"{self.get_name()} has been started")
+
         self.robot1_publisher = self.create_publisher(Twist, "robot1/raw_vel", 10)
         self.robot2_publisher = self.create_publisher(Twist, "robot2/raw_vel", 10)
 
@@ -69,7 +72,7 @@ class PathPlanner(Node):
         
         self.robot1_publisher.publish(robot1_msg)
         self.robot2_publisher.publish(robot2_msg)
-        
+
         self.robot1_x += robot1_msg.linear.x * 0.05
         self.robot1_y += robot1_msg.linear.y * 0.05
         self.robot2_x += robot2_msg.linear.x * 0.05
