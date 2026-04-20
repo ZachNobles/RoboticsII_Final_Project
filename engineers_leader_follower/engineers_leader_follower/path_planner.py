@@ -36,7 +36,7 @@ class PathPlanner(Node):
         self.robot2_y = -0.3
         self.robot2_theta = 0.0
 
-        self.velocity = 1.0
+        self.velocity = 0.5
         timer_period = 0.05 # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
