@@ -18,7 +18,7 @@ class PathPlanner(Node):
 
         self.goal_points = [
             (2.0, 0.0),
-            (4.0, -1.0)
+            (3.0, -1.0)
         ]
 
         self.current_goal_point = self.goal_points[0]
@@ -35,9 +35,18 @@ class PathPlanner(Node):
         self.robot2_y = -0.6
         self.robot2_theta = 0.0
 
+        self.distance_threshold = 0.6
+
         self.velocity = 0.5
         timer_period = 0.05 # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
+
+    
+    def calculate_path_distance(self):
+        sum = 0.0
+        for i in range(1, len(self.robot1_points)):
+            sum += np.linalg.norm(np.array(self.robot1_points[i]) - np.array(self.robot1_points[i-1]))
+        return sum
 
     
     def timer_callback(self):
@@ -48,6 +57,7 @@ class PathPlanner(Node):
 
         if np.linalg.norm(np.array(self.current_goal_point) - np.array((self.robot1_x, self.robot1_y))) < 0.2:
             self.get_logger().info(f"Reached goal point: {self.current_goal_point}")
+
             if len(self.goal_points) > 0:
                 self.current_goal_point = self.goal_points.pop(0)
                 self.get_logger().info(f"New goal point: {self.current_goal_point}")
@@ -65,7 +75,9 @@ class PathPlanner(Node):
         robot1_msg.linear.x = self.velocity * np.cos(theta1)
         robot1_msg.linear.y = self.velocity * np.sin(theta1)
 
-        if len(self.robot1_points) > 5:
+        path_distance = self.calculate_path_distance()
+
+        if path_distance > self.distance_threshold:
             self.robot2_goal = self.robot1_points.pop(0)
             theta2 = np.arctan2(self.robot2_goal[1] - self.robot2_y, self.robot2_goal[0] - self.robot2_x)
             robot2_msg.linear.x = self.velocity * np.cos(theta2)
