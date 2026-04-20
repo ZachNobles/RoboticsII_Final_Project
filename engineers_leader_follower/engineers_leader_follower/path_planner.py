@@ -22,7 +22,7 @@ class PathPlanner(Node):
             (2.0, 0.0),
             (3.0, 1.0)
         ]
-        self.robot2_end_goal = (self.goal_points[-1][0], self.goal_points[-1][1] - 0.6)
+        self.robot2_end_goal = (self.goal_points[-1][0], self.goal_points[-1][1] - self.robot2_offset)
 
         self.current_goal_point = self.goal_points[0]
 
@@ -71,6 +71,7 @@ class PathPlanner(Node):
                 robot2_msg.linear.y = 0.0
 
                 if np.linalg.norm(np.array(self.robot2_end_goal) - np.array((self.robot2_x, self.robot2_y))) > 0.2:
+                    self.get_logger().info(f"Robot 1 reached all goal points. Robot 2 moving to end goal: {self.robot2_end_goal}")
                     theta2 = np.arctan2(self.robot2_end_goal[1] - self.robot2_y, self.robot2_end_goal[0] - self.robot2_x)
                     robot2_msg.linear.x = self.velocity * np.cos(theta2)
                     robot2_msg.linear.y = self.velocity * np.sin(theta2)
