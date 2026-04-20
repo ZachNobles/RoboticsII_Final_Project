@@ -26,7 +26,7 @@ class PathPlanner(Node):
 
         self.current_goal_point = self.goal_points[0]
 
-        self.robot1_goal = None
+        self.robot1_goal = self.goal_points[0]
         self.robot2_goal = None
 
         self.robot1_points = []
@@ -56,48 +56,50 @@ class PathPlanner(Node):
         robot1_msg = Twist()
         robot2_msg = Twist()
 
+        robot1_msg.linear.x = 0.0
+        robot1_msg.linear.y = 0.0
+        robot2_msg.linear.x = 0.0
+        robot2_msg.linear.y = 0.0
+
         self.robot1_points.append((self.robot1_x, self.robot1_y))
 
+        # if robot 1 has reached its goal
         if np.linalg.norm(np.array(self.current_goal_point) - np.array((self.robot1_x, self.robot1_y))) < 0.2:
             self.get_logger().info(f"Reached goal point: {self.current_goal_point}")
-
+            
+            # if there are more goal points, target the next one
             if len(self.goal_points) > 0:
                 self.current_goal_point = self.goal_points.pop(0)
                 self.get_logger().info(f"New goal point: {self.current_goal_point}")
             else:
-                robot1_msg.linear.x = 0.0
-                robot1_msg.linear.y = 0.0
-                robot2_msg.linear.x = 0.0
-                robot2_msg.linear.y = 0.0
+                self.robot1_goal = None
 
+                # if robot 2 is not at its end goal, target it
                 if np.linalg.norm(np.array(self.robot2_end_goal) - np.array((self.robot2_x, self.robot2_y))) > 0.2:
                     self.get_logger().info(f"Robot 1 reached all goal points. Robot 2 moving to end goal: {self.robot2_end_goal}")
-                    theta2 = np.arctan2(self.robot2_end_goal[1] - self.robot2_y, self.robot2_end_goal[0] - self.robot2_x)
-                    robot2_msg.linear.x = self.velocity * np.cos(theta2)
-                    robot2_msg.linear.y = self.velocity * np.sin(theta2)
-                    self.robot2_x += robot2_msg.linear.x * 0.05
-                    self.robot2_y += robot2_msg.linear.y * 0.05
+                    self.robot2_goal = self.robot2_end_goal
                 
                 else:
+                    self.get_logger().info("All goal points reached. Stopping robots.")
+                    robot1_msg.linear.x = 0.0
+                    robot1_msg.linear.y = 0.0
                     robot2_msg.linear.x = 0.0
                     robot2_msg.linear.y = 0.0
                     self.robot1_publisher.publish(robot1_msg)
                     self.robot2_publisher.publish(robot2_msg)
-                    self.get_logger().info("All goal points reached. Stopping robots.")
                     return
-
-                self.robot1_publisher.publish(robot1_msg)
-                self.robot2_publisher.publish(robot2_msg)
                 
+        if self.robot1_goal is not None:
+            theta1 = np.arctan2(self.current_goal_point[1] - self.robot1_y, self.current_goal_point[0] - self.robot1_x)
+            robot1_msg.linear.x = self.velocity * np.cos(theta1)
+            robot1_msg.linear.y = self.velocity * np.sin(theta1)
+        
+            path_distance = self.calculate_path_distance()
 
-        theta1 = np.arctan2(self.current_goal_point[1] - self.robot1_y, self.current_goal_point[0] - self.robot1_x)
-        robot1_msg.linear.x = self.velocity * np.cos(theta1)
-        robot1_msg.linear.y = self.velocity * np.sin(theta1)
+            if path_distance > self.distance_threshold:
+                self.robot2_goal = self.robot1_points.pop(0)
 
-        path_distance = self.calculate_path_distance()
-
-        if path_distance > self.distance_threshold:
-            self.robot2_goal = self.robot1_points.pop(0)
+        if self.robot2_goal is not None:
             theta2 = np.arctan2(self.robot2_goal[1] - self.robot2_y, self.robot2_goal[0] - self.robot2_x)
             robot2_msg.linear.x = self.velocity * np.cos(theta2)
             robot2_msg.linear.y = self.velocity * np.sin(theta2)
