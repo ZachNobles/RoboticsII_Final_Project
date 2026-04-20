@@ -80,6 +80,18 @@ class PathPlanner(Node):
         self.robot1_y += robot1_msg.linear.y * 0.05
         self.robot2_x += robot2_msg.linear.x * 0.05
         self.robot2_y += robot2_msg.linear.y * 0.05
+    
+    def shutdown(self):
+        self.get_logger().info(f"{self.get_name()} is shutting down")
+        robot1_msg = Twist()
+        robot2_msg = Twist()
+
+        robot1_msg.linear.x = 0.0
+        robot1_msg.linear.y = 0.0
+        robot2_msg.linear.x = 0.0
+        robot2_msg.linear.y = 0.0
+        self.robot1_publisher.publish(robot1_msg)
+        self.robot2_publisher.publish(robot2_msg)
 
 
 
@@ -93,6 +105,7 @@ def main(args=None):
     try:
         rclpy.spin(path_planner)
     except KeyboardInterrupt:
+        path_planner.shutdown()
         path_planner.get_logger().info('Interrupt received, shutting down')
 
     path_planner.destroy_node()
