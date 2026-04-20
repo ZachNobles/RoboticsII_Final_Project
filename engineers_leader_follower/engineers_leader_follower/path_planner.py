@@ -75,6 +75,8 @@ class PathPlanner(Node):
                     theta2 = np.arctan2(self.robot2_end_goal[1] - self.robot2_y, self.robot2_end_goal[0] - self.robot2_x)
                     robot2_msg.linear.x = self.velocity * np.cos(theta2)
                     robot2_msg.linear.y = self.velocity * np.sin(theta2)
+                    self.robot2_x += robot2_msg.linear.x * 0.05
+                    self.robot2_y += robot2_msg.linear.y * 0.05
                 
                 else:
                     robot2_msg.linear.x = 0.0
