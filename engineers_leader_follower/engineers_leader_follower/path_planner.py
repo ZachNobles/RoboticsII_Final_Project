@@ -16,10 +16,13 @@ class PathPlanner(Node):
         self.robot1_publisher = self.create_publisher(Twist, "/robot1/cmd_vel", 10)
         self.robot2_publisher = self.create_publisher(Twist, "/robot2/cmd_vel", 10)
 
+        self.robot2_offset = 0.4
+
         self.goal_points = [
             (2.0, 0.0),
             (3.0, -1.0)
         ]
+        self.robot2_end_goal = (self.goal_points[-1][0], self.goal_points[-1][1] - 0.6)
 
         self.current_goal_point = self.goal_points[0]
 
@@ -32,10 +35,10 @@ class PathPlanner(Node):
         self.robot1_y = 0.0
         self.robot1_theta = 0.0
         self.robot2_x = 0.0
-        self.robot2_y = -0.6
+        self.robot2_y = -self.robot2_offset
         self.robot2_theta = 0.0
 
-        self.distance_threshold = 0.6
+        self.distance_threshold = self.robot2_offset
 
         self.velocity = 0.5
         timer_period = 0.05 # seconds
@@ -66,10 +69,23 @@ class PathPlanner(Node):
                 robot1_msg.linear.y = 0.0
                 robot2_msg.linear.x = 0.0
                 robot2_msg.linear.y = 0.0
+
+                if np.linalg.norm(np.array(self.robot2_end_goal) - np.array((self.robot2_x, self.robot2_y))) > 0.2:
+                    theta2 = np.arctan2(self.robot2_end_goal[1] - self.robot2_y, self.robot2_end_goal[0] - self.robot2_x)
+                    robot2_msg.linear.x = self.velocity * np.cos(theta2)
+                    robot2_msg.linear.y = self.velocity * np.sin(theta2)
+                
+                else:
+                    robot2_msg.linear.x = 0.0
+                    robot2_msg.linear.y = 0.0
+                    self.robot1_publisher.publish(robot1_msg)
+                    self.robot2_publisher.publish(robot2_msg)
+                    self.get_logger().info("All goal points reached. Stopping robots.")
+                    return
+
                 self.robot1_publisher.publish(robot1_msg)
                 self.robot2_publisher.publish(robot2_msg)
-                self.get_logger().info("All goal points reached. Stopping robots.")
-                return
+                
 
         theta1 = np.arctan2(self.current_goal_point[1] - self.robot1_y, self.current_goal_point[0] - self.robot1_x)
         robot1_msg.linear.x = self.velocity * np.cos(theta1)
