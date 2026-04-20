@@ -17,8 +17,7 @@ class PathPlanner(Node):
         self.robot2_publisher = self.create_publisher(Twist, "/robot2/cmd_vel", 10)
 
         self.goal_points = [
-            (1.0, 5.0),
-            (1.0, 8.0),
+            (2.0, 0.0),
 
         ]
 
