@@ -20,7 +20,7 @@ class PathPlanner(Node):
 
         self.goal_points = [
             (2.0, 0.0),
-            (3.0, -1.0)
+            (3.0, 1.0)
         ]
         self.robot2_end_goal = (self.goal_points[-1][0], self.goal_points[-1][1] - 0.6)
 
