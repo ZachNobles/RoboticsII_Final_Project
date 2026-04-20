@@ -1,5 +1,19 @@
 # RoboticsII_Final_Project
 
+## Running the package
+1. Ensure robots are connected to the same network
+2. [Both] Run the docker setup
+3. [Both], run ```export ROS_DOMAIN_ID=X```, where X is replaced by a number 1-232. It must be the same number on both robots.
+4. Clone the repository into the yahboomcar workspace, build and source
+5. [1] ```ros2 run yahboomcar_bringup Mcnamu_driver_X3 --ros-args -r cmd_vel:=/robot1/cmd_vel```
+6. [2] ```ros2 run yahboomcar_bringup Mcnamu_driver_X3 --ros-args -r cmd_vel:=/robot2/cmd_vel```
+
+You should now be able to publish to the robots invidually from one terminal using:
+```ros2 topic pub --once /robot1/cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.4, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"```
+
+And you can run the package with ```ros2 run engineers_leader_follower path_planner```
+
+
 ## Setting up communication between robots
 1. Ensure robots are connected to the same network
 2. [Both], run ```export ROS_DOMAIN_ID=X```, where X is replaced by a number 1-232. It must be the same number on both robots.
