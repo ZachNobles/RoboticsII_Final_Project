@@ -18,7 +18,7 @@ class PathPlanner(Node):
 
         self.goal_points = [
             (2.0, 0.0),
-
+            (4.0, -1.0)
         ]
 
         self.current_goal_point = self.goal_points[0]
