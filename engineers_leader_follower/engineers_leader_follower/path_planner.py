@@ -30,6 +30,7 @@ class PathPlanner(Node):
         self.robot2_goal = None
 
         self.robot1_points = []
+        self.robot1_all_points = []
 
         self.robot1_x = 0.0
         self.robot1_y = 0.0
@@ -62,6 +63,7 @@ class PathPlanner(Node):
         robot2_msg.linear.y = 0.0
 
         self.robot1_points.append((self.robot1_x, self.robot1_y))
+        self.robot1_all_points.append((self.robot1_x, self.robot1_y))
 
         # if robot 1 has reached its goal
         if np.linalg.norm(np.array(self.current_goal_point) - np.array((self.robot1_x, self.robot1_y))) < 0.2:
@@ -81,13 +83,12 @@ class PathPlanner(Node):
                 
                 else:
                     self.get_logger().info("All goal points reached. Stopping robots.")
-                    robot1_msg.linear.x = 0.0
-                    robot1_msg.linear.y = 0.0
-                    robot2_msg.linear.x = 0.0
-                    robot2_msg.linear.y = 0.0
-                    self.robot1_publisher.publish(robot1_msg)
-                    self.robot2_publisher.publish(robot2_msg)
-                    return
+                    self.shutdown()
+
+                    self.get_logger().info(f"list of robot 1 points: {self.robot1_all_points}")
+
+                    self.get_logger().info("Shutting down node...")
+                    rclpy.shutdown()
                 
         if self.robot1_goal is not None:
             theta1 = np.arctan2(self.current_goal_point[1] - self.robot1_y, self.current_goal_point[0] - self.robot1_x)
