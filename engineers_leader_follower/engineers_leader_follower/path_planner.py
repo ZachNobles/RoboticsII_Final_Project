@@ -31,6 +31,7 @@ class PathPlanner(Node):
 
         self.robot1_points = []
         self.robot1_all_points = []
+        self.robot2_all_points = []
 
         self.robot1_x = 0.0
         self.robot1_y = 0.0
@@ -64,6 +65,7 @@ class PathPlanner(Node):
 
         self.robot1_points.append((self.robot1_x, self.robot1_y))
         self.robot1_all_points.append((self.robot1_x, self.robot1_y))
+        self.robot2_all_points.append((self.robot2_x, self.robot2_y))
 
         # if robot 1 has reached its goal
         if np.linalg.norm(np.array(self.current_goal_point) - np.array((self.robot1_x, self.robot1_y))) < 0.2:
@@ -85,7 +87,8 @@ class PathPlanner(Node):
                     self.get_logger().info("All goal points reached. Stopping robots.")
                     self.shutdown()
 
-                    self.get_logger().info(f"list of robot 1 points: {self.robot1_all_points}")
+                    self.get_logger().info(f"robot 1 points: {self.robot1_all_points}")
+                    self.get_logger().info(f"robot 2 points: {self.robot2_all_points}")
 
                     self.get_logger().info("Shutting down node...")
                     rclpy.shutdown()
@@ -107,6 +110,7 @@ class PathPlanner(Node):
         
         self.robot1_publisher.publish(robot1_msg)
         self.robot2_publisher.publish(robot2_msg)
+        self.get_logger().info(f"Robot 1 position: ({self.robot1_x:.2f}, {self.robot1_y:.2f}), Robot 2 position: ({self.robot2_x:.2f}, {self.robot2_y:.2f})")
         self.get_logger().info(f"Published velocities - Robot1: ({robot1_msg.linear.x:.2f}, {robot1_msg.linear.y:.2f}), Robot2: ({robot2_msg.linear.x:.2f}, {robot2_msg.linear.y:.2f})")
 
         self.robot1_x += robot1_msg.linear.x * 0.05
