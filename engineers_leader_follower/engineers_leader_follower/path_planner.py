@@ -32,7 +32,7 @@ class PathPlanner(Node):
         self.robot1_y = 0.0
         self.robot1_theta = 0.0
         self.robot2_x = 0.0
-        self.robot2_y = -0.3
+        self.robot2_y = -0.6
         self.robot2_theta = 0.0
 
         self.velocity = 0.5
