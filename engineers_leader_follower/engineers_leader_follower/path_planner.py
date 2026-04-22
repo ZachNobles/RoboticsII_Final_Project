@@ -5,6 +5,8 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseWithCovarianceStamped
+from tf_transformations import euler_from_quaternion
+
 
 
 import numpy as np
@@ -92,14 +94,16 @@ class PathPlanner(Node):
     def robot1_odom_callback(self, msg):
         self.robot1_x = msg.pose.pose.position.x
         self.robot1_y = msg.pose.pose.position.y
-        self.robot1_theta = self.get_yaw_from_quaternion(msg.pose.pose.orientation)
+        q = msg.pose.pose.orientation
+        _, _, self.robot1_theta = euler_from_quaternion((q.x, q.y, q.z, q.w))
         self.get_logger().info(
             f"robot1 position=({self.robot1_x:.2f}, {self.robot1_y:.2f})")
 
     def robot2_odom_callback(self, msg):
         self.robot2_x = msg.pose.pose.position.x
         self.robot2_y = msg.pose.pose.position.y - self.robot2_offset
-        self.robot2_theta = self.get_yaw_from_quaternion(msg.pose.pose.orientation)
+        q = msg.pose.pose.orientation
+        _, _, self.robot2_theta = euler_from_quaternion((q.x, q.y, q.z, q.w))
         self.get_logger().info(
             f"robot2 position=({self.robot2_x:.2f}, {self.robot2_y:.2f})")
     
