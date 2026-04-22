@@ -80,7 +80,7 @@ class PathPlanner(Node):
                 self.robot1_goal = None
 
                 # if robot 2 is not at its end goal, target it
-                if np.linalg.norm(np.array(self.robot2_end_goal) - np.array((self.robot2_x, self.robot2_y))) > self.goal_treshold:
+                if np.linalg.norm(np.array(self.robot2_end_goal) - np.array((self.robot2_x, self.robot2_y))) > self.goal_threshold:
                     self.get_logger().info(f"Robot 1 reached all goal points. Robot 2 moving to end goal: {self.robot2_end_goal}")
                     self.robot2_goal = self.robot2_end_goal
                 
