@@ -16,9 +16,20 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 from launch.actions import GroupAction
 from launch_ros.actions import PushRosNamespace
-from launch.substitutions import PathJoinSubstitution
+import yaml
+import tempfile
 
-
+def patch_params(d, robot_name):
+    for key in list(d.keys()):
+        if isinstance(d[key], dict):
+            patch_params(d[key], robot_name)
+        elif key in ('odom0', 'imu0', 'imu1', 'odom1'):
+            # Prepend namespace if not already absolute with correct ns
+            topic = d[key]
+            if not topic.startswith('/' + robot_name):
+                # strip leading slash, prepend correct namespace
+                d[key] = '/' + robot_name + '/' + topic.lstrip('/')
+    return d
 
 print("---------------------robot_type = x3---------------------")
 def generate_launch_description():
@@ -95,16 +106,25 @@ def generate_launch_description():
         'ekf_x1_x3.yaml'   # use whatever your actual yaml filename is
     )
 
+
+    ekf_config_src = '/root/yahboomcar_ros2_ws/software/library_ws/src/robot_localization/params/ekf_x1_x3.yaml'
+    with open(ekf_config_src, 'r') as f:
+        ekf_params = yaml.safe_load(f)
+
+    robot_name = LaunchConfiguration('robot_name').perform(None)  # get the value of the robot_name argument
+    patched = patch_params(ekf_params, robot_name)
+
+    tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False)
+    yaml.dump(patched, tmp)
+    tmp.flush()
+    ekf_config_patched = tmp.name
+
     ekf_node = Node(
         package='robot_localization',
         executable='ekf_node',
         name='ekf_filter_node',
         output='screen',
-        parameters=[
-            ekf_config,
-            {'odom0': PathJoinSubstitution(['/', LaunchConfiguration('robot_name'), 'odom_raw'])},
-            {'imu0':  PathJoinSubstitution(['/', LaunchConfiguration('robot_name'), 'imu/data'])},
-        ],
+        parameters=[ekf_config_patched],  # use patched yaml only
     )
 
     yahboom_joy_node = Node(
