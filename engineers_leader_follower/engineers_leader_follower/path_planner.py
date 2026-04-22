@@ -41,7 +41,7 @@ class PathPlanner(Node):
         self.robot2_theta = 0.0
 
         self.distance_threshold = self.robot2_offset - 0.2
-        self.goal_threshold = 0.1
+        self.goal_threshold = 0.05
 
         self.velocity = 0.5
         timer_period = 0.05 # seconds
