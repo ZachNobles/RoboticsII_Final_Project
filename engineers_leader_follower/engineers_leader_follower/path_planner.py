@@ -105,8 +105,8 @@ class PathPlanner(Node):
             error_x = 0.0
             error_y = 0.0
             if self.robot1_intended_point is not None:
-                error_x = self.robot1_intended_point[0] - self.robot1_x
-                error_y = self.robot1_intended_point[1] - self.robot1_y
+                error_theta = np.arctan2(self.robot1_intended_point[1] - self.robot1_y, self.robot1_intended_point[0] - self.robot1_x) - theta1
+                robot1_msg.angular.z = self.error_gain * error_theta
             robot1_msg.linear.x = self.velocity * np.cos(theta1) + self.error_gain * error_x
             robot1_msg.linear.y = self.velocity * np.sin(theta1) + self.error_gain * error_y
 
