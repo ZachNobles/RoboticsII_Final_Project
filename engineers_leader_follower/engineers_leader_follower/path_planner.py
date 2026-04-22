@@ -69,7 +69,7 @@ class PathPlanner(Node):
         self.robot2_all_points.append((self.robot2_x, self.robot2_y))
 
         # if robot 1 has reached its goal
-        if np.linalg.norm(np.array(self.current_goal_point) - np.array((self.robot1_x, self.robot1_y))) < self.goal_treshold:
+        if np.linalg.norm(np.array(self.current_goal_point) - np.array((self.robot1_x, self.robot1_y))) < self.goal_threshold:
             self.get_logger().info(f"Reached goal point: {self.current_goal_point}")
             
             # if there are more goal points, target the next one
