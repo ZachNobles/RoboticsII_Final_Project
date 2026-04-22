@@ -10,7 +10,7 @@ class PathPlanner(Node):
     def __init__(self):
         super().__init__("path_planner")
         self.robot2_offset = 0.4
-        self.heading_error_gain = 1.0
+        self.error_gain = 1.0
 
         self.get_logger().info(f"{self.get_name()} has been started")
 
@@ -100,10 +100,15 @@ class PathPlanner(Node):
 
         if self.robot1_goal is not None:
             theta1 = np.arctan2(self.current_goal_point[1] - self.robot1_y, self.current_goal_point[0] - self.robot1_x)
-            heading_error = theta1 - self.robot1_theta
-            
-            robot1_msg.linear.x = self.velocity * np.cos(theta1)
-            robot1_msg.linear.y = self.velocity * np.sin(theta1)
+            error_x = 0.0
+            error_y = 0.0
+            if self.robot1_intended_point is not None:
+                error_x = self.robot1_intended_point[0] - self.robot1_x
+                error_y = self.robot1_intended_point[1] - self.robot1_y
+            robot1_msg.linear.x = self.velocity * np.cos(theta1) + self.error_gain * error_x
+            robot1_msg.linear.y = self.velocity * np.sin(theta1) + self.error_gain * error_y
+
+            self.robot1_intended_point = (self.robot1_x + self.velocity * np.cos(theta1), self.robot1_y + self.velocity * np.sin(theta1))
 
 
             if self.calculate_path_distance() > self.distance_threshold:
@@ -111,7 +116,6 @@ class PathPlanner(Node):
 
         if self.robot2_goal is not None:
             theta2 = np.arctan2(self.robot2_goal[1] - self.robot2_y, self.robot2_goal[0] - self.robot2_x)
-            heading_error = theta2 - self.robot2_theta
 
             robot2_msg.linear.x = self.velocity * np.cos(theta2)
             robot2_msg.linear.y = self.velocity * np.sin(theta2)
