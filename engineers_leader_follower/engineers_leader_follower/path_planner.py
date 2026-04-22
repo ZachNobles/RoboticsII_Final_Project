@@ -40,7 +40,8 @@ class PathPlanner(Node):
         self.robot2_y = -self.robot2_offset
         self.robot2_theta = 0.0
 
-        self.distance_threshold = self.robot2_offset
+        self.distance_threshold = self.robot2_offset - 0.2
+        self.goal_threshold = 0.1
 
         self.velocity = 0.5
         timer_period = 0.05 # seconds
@@ -68,7 +69,7 @@ class PathPlanner(Node):
         self.robot2_all_points.append((self.robot2_x, self.robot2_y))
 
         # if robot 1 has reached its goal
-        if np.linalg.norm(np.array(self.current_goal_point) - np.array((self.robot1_x, self.robot1_y))) < 0.2:
+        if np.linalg.norm(np.array(self.current_goal_point) - np.array((self.robot1_x, self.robot1_y))) < self.goal_treshold:
             self.get_logger().info(f"Reached goal point: {self.current_goal_point}")
             
             # if there are more goal points, target the next one
@@ -79,7 +80,7 @@ class PathPlanner(Node):
                 self.robot1_goal = None
 
                 # if robot 2 is not at its end goal, target it
-                if np.linalg.norm(np.array(self.robot2_end_goal) - np.array((self.robot2_x, self.robot2_y))) > 0.2:
+                if np.linalg.norm(np.array(self.robot2_end_goal) - np.array((self.robot2_x, self.robot2_y))) > self.goal_treshold:
                     self.get_logger().info(f"Robot 1 reached all goal points. Robot 2 moving to end goal: {self.robot2_end_goal}")
                     self.robot2_goal = self.robot2_end_goal
                 
@@ -100,7 +101,7 @@ class PathPlanner(Node):
         
             path_distance = self.calculate_path_distance()
 
-            while path_distance > self.distance_threshold - 0.2:
+            while path_distance > self.distance_threshold:
                 self.robot2_goal = self.robot1_points.pop(0)
                 path_distance = self.calculate_path_distance()
 
