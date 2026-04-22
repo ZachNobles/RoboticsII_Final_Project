@@ -32,6 +32,7 @@ class PathPlanner(Node):
             PoseWithCovarianceStamped, '/robot2/set_pose', 10)
 
         self._pose_reset_done = False
+        self._odom_received = False
         self.create_timer(1.0, self.reset_poses)
 
 
@@ -98,8 +99,9 @@ class PathPlanner(Node):
         siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
         cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         self.robot1_theta = math.atan2(siny_cosp, cosy_cosp)
-        self.get_logger().info(
-            f"robot1 position=({self.robot1_x:.2f}, {self.robot1_y:.2f})")
+        self.get_logger().info(f"robot1 position=({self.robot1_x:.2f}, {self.robot1_y:.2f})")
+        if self._pose_reset_done:
+            self._odom_received = True
 
     def robot2_odom_callback(self, msg):
         self.robot2_x = msg.pose.pose.position.x
@@ -108,8 +110,7 @@ class PathPlanner(Node):
         siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
         cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         self.robot2_theta = math.atan2(siny_cosp, cosy_cosp)
-        self.get_logger().info(
-            f"robot2 position=({self.robot2_x:.2f}, {self.robot2_y:.2f})")
+        self.get_logger().info(f"robot2 position=({self.robot2_x:.2f}, {self.robot2_y:.2f})")
     
     def calculate_path_distance(self):
         sum = 0.0
@@ -119,6 +120,9 @@ class PathPlanner(Node):
 
     
     def timer_callback(self):
+        if not self._odom_received or not self._pose_reset_done:
+            return
+        
         robot1_msg = Twist()
         robot2_msg = Twist()
 
