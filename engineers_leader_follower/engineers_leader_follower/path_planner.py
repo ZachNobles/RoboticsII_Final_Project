@@ -67,29 +67,32 @@ class PathPlanner(Node):
         timer_period = 0.05 # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
     
-    def reset_poses(self, ):
+    def reset_poses(self):
         if self._pose_reset_done:
             return
 
         stamp = self.get_clock().now().to_msg()
 
-        # Robot 1 -> (0, 0)
+        # Robot 1 -> (0, 0, 0)
         msg1 = PoseWithCovarianceStamped()
         msg1.header.stamp = stamp
         msg1.header.frame_id = 'odom'
-        # x, y default to 0.0 already
+        msg1.pose.pose.orientation.w = 1.0  # explicit theta=0
+
         self.robot1_set_pose_pub.publish(msg1)
 
-        # Robot 2 -> (0, -robot2_offset)
+        # Robot 2 -> (0, -robot2_offset, 0)
         msg2 = PoseWithCovarianceStamped()
         msg2.header.stamp = stamp
         msg2.header.frame_id = 'odom'
         msg2.pose.pose.position.y = -self.robot2_offset
+        msg2.pose.pose.orientation.w = 1.0  # explicit theta=0
+
         self.robot2_set_pose_pub.publish(msg2)
 
         self._pose_reset_done = True
         self.get_logger().info(
-            f"Reset robot1 to (0, 0), robot2 to (0, {-self.robot2_offset})")
+        f"Reset robot1 to (0, 0, 0), robot2 to (0, {-self.robot2_offset}, 0)")
     
 
     def robot1_odom_callback(self, msg):
