@@ -17,8 +17,8 @@ class PathPlanner(Node):
         self.robot1_publisher = self.create_publisher(Twist, "/robot1/cmd_vel", 10)
         self.robot2_publisher = self.create_publisher(Twist, "/robot2/cmd_vel", 10)
 
-        self.subscription = self.create_subscription(Odometry, "/robot1/odom", self.odom_callback, 10)
-        self.subscription = self.create_subscription(Odometry, "/robot2/odom", self.odom_callback, 10)
+        self.subscription = self.create_subscription(Odometry, "/robot1/odometry/filtered", self.odom_callback, 10)
+        self.subscription = self.create_subscription(Odometry, "/robot2/odometry/filtered", self.odom_callback, 10)
         
 
         self.robot2_offset = 0.4
