@@ -101,12 +101,9 @@ class PathPlanner(Node):
         if self.robot1_goal is not None:
             theta1 = np.arctan2(self.current_goal_point[1] - self.robot1_y, self.current_goal_point[0] - self.robot1_x)
             heading_error = theta1 - self.robot1_theta
-            # Normalize to [-pi, pi]
-            heading_error = math.atan2(math.sin(heading_error), math.cos(heading_error))
             
             robot1_msg.linear.x = self.velocity * np.cos(theta1)
             robot1_msg.linear.y = self.velocity * np.sin(theta1)
-            robot1_msg.angular.z = self.heading_error_gain * heading_error
 
 
             if self.calculate_path_distance() > self.distance_threshold:
@@ -115,12 +112,9 @@ class PathPlanner(Node):
         if self.robot2_goal is not None:
             theta2 = np.arctan2(self.robot2_goal[1] - self.robot2_y, self.robot2_goal[0] - self.robot2_x)
             heading_error = theta2 - self.robot2_theta
-            # Normalize to [-pi, pi]
-            heading_error = math.atan2(math.sin(heading_error), math.cos(heading_error))
 
             robot2_msg.linear.x = self.velocity * np.cos(theta2)
             robot2_msg.linear.y = self.velocity * np.sin(theta2)
-            robot2_msg.angular.z = self.heading_error_gain * heading_error
 
         self.robot1_publisher.publish(robot1_msg)
         self.robot2_publisher.publish(robot2_msg)
