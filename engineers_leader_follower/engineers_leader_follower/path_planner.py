@@ -115,11 +115,14 @@ class PathPlanner(Node):
         if self.robot1_goal is not None:
             dx = self.current_goal_point[0] - self.robot1_x
             dy = self.current_goal_point[1] - self.robot1_y
-            
-            # Normalize direction to goal
+
             dist = math.sqrt(dx*dx + dy*dy)
-            robot1_msg.linear.x = self.velocity * (dx / dist)
-            robot1_msg.linear.y = self.velocity * (dy / dist)
+            ux = dx / dist
+            uy = dy / dist
+            cross_track = -ux * self.robot1_y + uy * self.robot1_x
+            
+            robot1_msg.linear.x = self.velocity * ux - self.heading_error_gain * cross_track * (-uy)
+            robot1_msg.linear.y = self.velocity * uy - self.heading_error_gain * cross_track * ux
 
 
             if self.calculate_path_distance() > self.distance_threshold:
@@ -129,10 +132,13 @@ class PathPlanner(Node):
             dx = self.current_goal_point[0] - self.robot2_x
             dy = self.current_goal_point[1] - self.robot2_y
             
-            # Normalize direction to goal
             dist = math.sqrt(dx*dx + dy*dy)
-            robot2_msg.linear.x = self.velocity * (dx / dist)
-            robot2_msg.linear.y = self.velocity * (dy / dist)
+            ux = dx / dist
+            uy = dy / dist
+            cross_track = -ux * self.robot2_y + uy * self.robot2_x
+            
+            robot2_msg.linear.x = self.velocity * ux - self.heading_error_gain * cross_track * (-uy)
+            robot2_msg.linear.y = self.velocity * uy - self.heading_error_gain * cross_track * ux
 
         self.robot1_publisher.publish(robot1_msg)
         self.robot2_publisher.publish(robot2_msg)
