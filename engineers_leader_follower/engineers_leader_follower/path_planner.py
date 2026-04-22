@@ -33,7 +33,8 @@ class PathPlanner(Node):
 
         self._pose_reset_done = False
         self._odom_received = False
-        self.create_timer(1.0, self.reset_poses)
+        self._pose_reset_attempts = 0
+        self.create_timer(0.5, self.reset_poses) 
 
 
         self.goal_points = [
@@ -67,39 +68,28 @@ class PathPlanner(Node):
     def reset_poses(self):
         if self._pose_reset_done:
             return
-        
-        self.robot1_x = 0.0
-        self.robot1_y = 0.0
-        self.robot1_theta = 0.0
-        self.robot2_x = 0.0
-        self.robot2_y = -self.robot2_offset
-        self.robot2_theta = 0.0
-        self.robot1_points = []
-        self.robot1_all_points = []
-        self.robot2_all_points = []
 
         stamp = self.get_clock().now().to_msg()
 
-        # Robot 1 -> (0, 0, 0)
         msg1 = PoseWithCovarianceStamped()
         msg1.header.stamp = stamp
         msg1.header.frame_id = 'odom'
-        msg1.pose.pose.orientation.w = 1.0  # explicit theta=0
-
+        msg1.pose.pose.orientation.w = 1.0
         self.robot1_set_pose_pub.publish(msg1)
 
-        # Robot 2 -> (0, -robot2_offset, 0)
         msg2 = PoseWithCovarianceStamped()
         msg2.header.stamp = stamp
         msg2.header.frame_id = 'odom'
         msg2.pose.pose.position.y = -self.robot2_offset
-        msg2.pose.pose.orientation.w = 1.0  # explicit theta=0
-
+        msg2.pose.pose.orientation.w = 1.0
         self.robot2_set_pose_pub.publish(msg2)
 
-        self._pose_reset_done = True
-        self.get_logger().info(
-        f"Reset robot1 to (0, 0, 0), robot2 to (0, {-self.robot2_offset}, 0)")
+        self._pose_reset_attempts += 1
+        self.get_logger().info(f"Sent pose reset (attempt {self._pose_reset_attempts})")
+
+        # Keep retrying until odom confirms the reset
+        if self._odom_received:
+            self._pose_reset_done = True
     
 
     def robot1_odom_callback(self, msg):
