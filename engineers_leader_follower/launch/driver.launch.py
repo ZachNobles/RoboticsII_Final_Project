@@ -9,6 +9,9 @@ from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
 import os
+import sys
+import yaml
+import tempfile
 from ament_index_python.packages import get_package_share_directory
 
 from launch.actions import IncludeLaunchDescription
@@ -16,24 +19,45 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 from launch.actions import GroupAction
 from launch_ros.actions import PushRosNamespace
-import yaml
-import tempfile
-import os
-import sys
+
 
 def patch_params(d, robot_name):
     for key in list(d.keys()):
         if isinstance(d[key], dict):
             patch_params(d[key], robot_name)
-        elif key in ('odom0', 'imu0', 'imu1', 'odom1'):
-            # Prepend namespace if not already absolute with correct ns
+        elif key in ('odom0', 'odom1', 'imu0', 'imu1', 'twist0', 'twist1'):
             topic = d[key]
             if not topic.startswith('/' + robot_name):
-                # strip leading slash, prepend correct namespace
                 d[key] = '/' + robot_name + '/' + topic.lstrip('/')
     return d
 
-print("---------------------robot_type = x3---------------------")
+
+# Read robot_name from CLI args at Python parse time, before ROS launch context exists
+robot_name = 'robot1'
+for arg in sys.argv:
+    if arg.startswith('robot_name:='):
+        robot_name = arg.split(':=')[1]
+        break
+
+print(f"---------------------robot_type = x3 | robot_name = {robot_name}---------------------")
+
+# Patch the EKF config at parse time so topics are resolved before node startup
+ekf_config_src = '/root/yahboomcar_ros2_ws/software/library_ws/src/robot_localization/params/ekf_x1_x3.yaml'
+with open(ekf_config_src, 'r') as f:
+    ekf_params = yaml.safe_load(f)
+
+patched = patch_params(ekf_params, robot_name)
+
+tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False)
+yaml.dump(patched, tmp)
+tmp.flush()
+ekf_config_patched = tmp.name
+
+print(f"Patched EKF config written to: {ekf_config_patched}")
+print(f"  odom0 -> {patched['ekf_filter_node']['ros__parameters']['odom0']}")
+print(f"  imu0  -> {patched['ekf_filter_node']['ros__parameters']['imu0']}")
+
+
 def generate_launch_description():
     urdf_tutorial_path = get_package_share_path('yahboomcar_description')
     default_model_path = urdf_tutorial_path / 'urdf/yahboomcar_X3.urdf'
@@ -47,6 +71,7 @@ def generate_launch_description():
                                      description='Absolute path to rviz config file')
     pub_odom_tf_arg = DeclareLaunchArgument('pub_odom_tf', default_value='false',
                                             description='Whether to publish the tf from the original odom to the base_footprint')
+    ns_arg = DeclareLaunchArgument('robot_name', default_value='robot1')
 
     robot_description = ParameterValue(Command(['xacro ', LaunchConfiguration('model')]),
                                        value_type=str)
@@ -57,7 +82,6 @@ def generate_launch_description():
         parameters=[{'robot_description': robot_description}]
     )
 
-    # Depending on gui parameter, either launch joint_state_publisher or joint_state_publisher_gui
     joint_state_publisher_node = Node(
         package='joint_state_publisher',
         executable='joint_state_publisher',
@@ -70,19 +94,11 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('gui'))
     )
 
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        output='screen',
-        arguments=['-d', LaunchConfiguration('rvizconfig')],
-    )
-
-    imu_filter_config = os.path.join(              
+    imu_filter_config = os.path.join(
         get_package_share_directory('yahboomcar_bringup'),
         'param',
         'imu_filter_param.yaml'
-    ) 
+    )
 
     driver_node = Node(
         package='yahboomcar_bringup',
@@ -92,7 +108,6 @@ def generate_launch_description():
     base_node = Node(
         package='yahboomcar_base_node',
         executable='base_node_X3',
-        # 当使用ekf融合时，该tf有ekf发布
         parameters=[{'pub_odom_tf': LaunchConfiguration('pub_odom_tf')}]
     )
 
@@ -102,35 +117,12 @@ def generate_launch_description():
         parameters=[imu_filter_config]
     )
 
-    ekf_config = os.path.join(
-        get_package_share_directory('robot_localization'),
-        'params',
-        'ekf_x1_x3.yaml'   # use whatever your actual yaml filename is
-    )
-
-    robot_name = 'robot1'
-    for arg in sys.argv:
-        if arg.startswith('robot_name:='):
-            robot_name = arg.split(':=')[1]
-            break
-
-    ekf_config_src = '/root/yahboomcar_ros2_ws/software/library_ws/src/robot_localization/params/ekf_x1_x3.yaml'
-    with open(ekf_config_src, 'r') as f:
-        ekf_params = yaml.safe_load(f)
-
-    patched = patch_params(ekf_params, robot_name)
-
-    tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False)
-    yaml.dump(patched, tmp)
-    tmp.flush()
-    ekf_config_patched = tmp.name
-
     ekf_node = Node(
         package='robot_localization',
         executable='ekf_node',
         name='ekf_filter_node',
         output='screen',
-        parameters=[ekf_config_patched],  # use patched yaml only
+        parameters=[ekf_config_patched],
     )
 
     yahboom_joy_node = Node(
@@ -138,15 +130,9 @@ def generate_launch_description():
         executable='yahboom_joy_X3',
     )
 
-    # namespace argument
-    ns_arg = DeclareLaunchArgument('robot_name', default_value='robot1')
-
-    # 2. Group all nodes together
     grouped_nodes = GroupAction(
         actions=[
-            # This pushes the namespace to all nodes in this group
             PushRosNamespace(LaunchConfiguration('robot_name')),
-            
             joint_state_publisher_node,
             joint_state_publisher_gui_node,
             robot_state_publisher_node,
