@@ -129,8 +129,8 @@ class PathPlanner(Node):
                 self.robot2_goal = self.robot1_points.pop(0)
 
         if self.robot2_goal is not None:
-            dx = self.current_goal_point[0] - self.robot2_x
-            dy = self.current_goal_point[1] - self.robot2_y
+            dx = self.robot2_goal[0] - self.robot2_x
+            dy = self.robot2_goal[1] - self.robot2_y
             
             dist = math.sqrt(dx*dx + dy*dy)
             ux = dx / dist
