@@ -36,6 +36,8 @@ class PathPlanner(Node):
         self.robot1_all_points = []
         self.robot2_all_points = []
 
+        self.robot1_intended_point = None
+
         self.robot1_x = 0.0
         self.robot1_y = 0.0
         self.robot1_theta = 0.0
