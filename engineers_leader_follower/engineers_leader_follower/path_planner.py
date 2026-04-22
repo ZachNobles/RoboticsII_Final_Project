@@ -110,8 +110,9 @@ class PathPlanner(Node):
         cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         self.robot1_theta = math.atan2(siny_cosp, cosy_cosp)
         self.get_logger().info(f"robot1 position=({self.robot1_x:.2f}, {self.robot1_y:.2f})")
-        if self._pose_reset_done:
+        if abs(self.robot1_x) < 0.05 and abs(self.robot1_y) < 0.05:
             self._odom_received = True
+            self.get_logger().info("robot1 odom confirmed reset to (0, 0)")
 
     def robot2_odom_callback(self, msg):
         self.robot2_x = msg.pose.pose.position.x
