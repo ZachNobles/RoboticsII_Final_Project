@@ -46,16 +46,28 @@ ekf_config_src = '/root/yahboomcar_ros2_ws/software/library_ws/src/robot_localiz
 with open(ekf_config_src, 'r') as f:
     ekf_params = yaml.safe_load(f)
 
-patched = patch_params(ekf_params, robot_name)
+# Extract just the ros__parameters dict
+ros_params = ekf_params['ekf_filter_node']['ros__parameters']
+
+# Patch the topic names
+patch_params(ros_params, robot_name)
+
+# Re-nest under the fully qualified node name (namespace/node_name)
+final_params = {
+    f'{robot_name}/ekf_filter_node': {
+        'ros__parameters': ros_params
+    }
+}
 
 tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False)
-yaml.dump(patched, tmp)
+yaml.dump(final_params, tmp)
 tmp.flush()
 ekf_config_patched = tmp.name
 
-print(f"Patched EKF config written to: {ekf_config_patched}")
-print(f"  odom0 -> {patched['ekf_filter_node']['ros__parameters']['odom0']}")
-print(f"  imu0  -> {patched['ekf_filter_node']['ros__parameters']['imu0']}")
+# Verify
+print(f"  odom0 -> {ros_params['odom0']}")
+print(f"  imu0  -> {ros_params['imu0']}")
+print(f"  YAML key -> {robot_name}/ekf_filter_node")
 
 
 def generate_launch_description():
