@@ -67,6 +67,16 @@ class PathPlanner(Node):
     def reset_poses(self):
         if self._pose_reset_done:
             return
+        
+        self.robot1_x = 0.0
+        self.robot1_y = 0.0
+        self.robot1_theta = 0.0
+        self.robot2_x = 0.0
+        self.robot2_y = -self.robot2_offset
+        self.robot2_theta = 0.0
+        self.robot1_points = []
+        self.robot1_all_points = []
+        self.robot2_all_points = []
 
         stamp = self.get_clock().now().to_msg()
 
