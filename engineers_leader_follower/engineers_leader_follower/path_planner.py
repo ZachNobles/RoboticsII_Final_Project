@@ -10,6 +10,7 @@ class PathPlanner(Node):
     def __init__(self):
         super().__init__("path_planner")
         self.robot2_offset = 0.4
+        self.heading_error_gain = 1.0
 
         self.get_logger().info(f"{self.get_name()} has been started")
 
@@ -23,6 +24,7 @@ class PathPlanner(Node):
             (2.0, 0.0),
             (3.0, 1.0)
         ]
+
         self.robot2_end_goal = (self.goal_points[-1][0], self.goal_points[-1][1] - self.robot2_offset)
 
         self.current_goal_point = self.goal_points[0]
@@ -43,6 +45,9 @@ class PathPlanner(Node):
 
         self.distance_threshold = self.robot2_offset
         self.velocity = 0.5
+
+        for i, point in enumerate(self.goal_points):
+            self.goal_points[i] = (point[0] + self.robot1_x, point[1] + self.robot1_y)
 
         self.timer = self.create_timer(0.05, self.timer_callback)
 
@@ -97,17 +102,26 @@ class PathPlanner(Node):
                     rclpy.shutdown()
 
         if self.robot1_goal is not None:
-            theta1 = np.arctan2(self.current_goal_point[1] - self.robot1_y, self.current_goal_point[0] - self.robot1_x)
-            robot1_msg.linear.x = self.velocity * np.cos(theta1)
-            robot1_msg.linear.y = self.velocity * np.sin(theta1)
+            dx = self.current_goal_point[0] - self.robot1_x
+            dy = self.current_goal_point[1] - self.robot1_y
+            
+            # Normalize direction to goal
+            dist = math.sqrt(dx*dx + dy*dy)
+            robot1_msg.linear.x = self.velocity * (dx / dist)
+            robot1_msg.linear.y = self.velocity * (dy / dist)
+
 
             if self.calculate_path_distance() > self.distance_threshold:
                 self.robot2_goal = self.robot1_points.pop(0)
 
         if self.robot2_goal is not None:
-            theta2 = np.arctan2(self.robot2_goal[1] - self.robot2_y, self.robot2_goal[0] - self.robot2_x)
-            robot2_msg.linear.x = self.velocity * np.cos(theta2)
-            robot2_msg.linear.y = self.velocity * np.sin(theta2)
+            dx = self.current_goal_point[0] - self.robot2_x
+            dy = self.current_goal_point[1] - self.robot2_y
+            
+            # Normalize direction to goal
+            dist = math.sqrt(dx*dx + dy*dy)
+            robot2_msg.linear.x = self.velocity * (dx / dist)
+            robot2_msg.linear.y = self.velocity * (dy / dist)
 
         self.robot1_publisher.publish(robot1_msg)
         self.robot2_publisher.publish(robot2_msg)
