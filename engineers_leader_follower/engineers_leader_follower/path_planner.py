@@ -25,8 +25,6 @@ class PathPlanner(Node):
             (3.0, 1.0)
         ]
 
-        self._goals_initialized = False
-
         self.robot2_end_goal = (self.goal_points[-1][0], self.goal_points[-1][1] - self.robot2_offset)
 
         self.current_goal_point = self.goal_points[0]
@@ -58,15 +56,6 @@ class PathPlanner(Node):
         cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         self.robot1_theta = math.atan2(siny_cosp, cosy_cosp)
 
-        if not self._goals_initialized:
-            self.goal_points = [(p[0] + self.robot1_x, p[1] + self.robot1_y) for p in self.goal_points]
-            self.current_goal_point = self.goal_points.pop(0)
-            self.robot1_goal = self.current_goal_point
-            self.robot2_end_goal = (self.goal_points[-1][0], 
-                                    self.goal_points[-1][1] - self.robot2_offset)
-            self._goals_initialized = True
-            self.get_logger().info(f"Goals initialized. First: {self.current_goal_point}, Remaining: {self.goal_points}")
-
     def robot2_odom_callback(self, msg):
         self.robot2_x = msg.pose.pose.position.x
         self.robot2_y = msg.pose.pose.position.y - self.robot2_offset
@@ -82,9 +71,6 @@ class PathPlanner(Node):
         return total
 
     def timer_callback(self):
-        if not self._goals_initialized:
-            return
-        
         robot1_msg = Twist()
         robot2_msg = Twist()
 
@@ -113,32 +99,28 @@ class PathPlanner(Node):
                     rclpy.shutdown()
 
         if self.robot1_goal is not None:
-            dx = self.current_goal_point[0] - self.robot1_x
-            dy = self.current_goal_point[1] - self.robot1_y
-
-            dist = math.sqrt(dx*dx + dy*dy)
-            ux = dx / dist
-            uy = dy / dist
-            cross_track = -ux * self.robot1_y + uy * self.robot1_x
+            theta1 = np.arctan2(self.current_goal_point[1] - self.robot1_y, self.current_goal_point[0] - self.robot1_x)
+            heading_error = theta1 - self.robot1_theta
+            # Normalize to [-pi, pi]
+            heading_error = math.atan2(math.sin(heading_error), math.cos(heading_error))
             
-            robot1_msg.linear.x = self.velocity * ux - self.heading_error_gain * cross_track * (-uy)
-            robot1_msg.linear.y = self.velocity * uy - self.heading_error_gain * cross_track * ux
+            robot1_msg.linear.x = self.velocity * np.cos(theta1)
+            robot1_msg.linear.y = self.velocity * np.sin(theta1)
+            robot1_msg.angular.z = self.heading_error_gain * heading_error
 
 
             if self.calculate_path_distance() > self.distance_threshold:
                 self.robot2_goal = self.robot1_points.pop(0)
 
         if self.robot2_goal is not None:
-            dx = self.robot2_goal[0] - self.robot2_x
-            dy = self.robot2_goal[1] - self.robot2_y
-            
-            dist = math.sqrt(dx*dx + dy*dy)
-            ux = dx / dist
-            uy = dy / dist
-            cross_track = -ux * self.robot2_y + uy * self.robot2_x
-            
-            robot2_msg.linear.x = self.velocity * ux - self.heading_error_gain * cross_track * (-uy)
-            robot2_msg.linear.y = self.velocity * uy - self.heading_error_gain * cross_track * ux
+            theta2 = np.arctan2(self.robot2_goal[1] - self.robot2_y, self.robot2_goal[0] - self.robot2_x)
+            heading_error = theta2 - self.robot2_theta
+            # Normalize to [-pi, pi]
+            heading_error = math.atan2(math.sin(heading_error), math.cos(heading_error))
+
+            robot2_msg.linear.x = self.velocity * np.cos(theta2)
+            robot2_msg.linear.y = self.velocity * np.sin(theta2)
+            robot2_msg.angular.z = self.heading_error_gain * heading_error
 
         self.robot1_publisher.publish(robot1_msg)
         self.robot2_publisher.publish(robot2_msg)
