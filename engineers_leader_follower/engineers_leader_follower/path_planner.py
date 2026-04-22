@@ -102,6 +102,7 @@ class PathPlanner(Node):
 
             while path_distance > self.distance_threshold:
                 self.robot2_goal = self.robot1_points.pop(0)
+                path_distance = self.calculate_path_distance()
 
         if self.robot2_goal is not None:
             theta2 = np.arctan2(self.robot2_goal[1] - self.robot2_y, self.robot2_goal[0] - self.robot2_x)
