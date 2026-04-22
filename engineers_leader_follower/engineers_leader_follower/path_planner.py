@@ -100,7 +100,7 @@ class PathPlanner(Node):
         
             path_distance = self.calculate_path_distance()
 
-            if path_distance > self.distance_threshold:
+            while path_distance > self.distance_threshold:
                 self.robot2_goal = self.robot1_points.pop(0)
 
         if self.robot2_goal is not None:
