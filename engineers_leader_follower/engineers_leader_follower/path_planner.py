@@ -5,7 +5,8 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseWithCovarianceStamped
-from tf_transformations import euler_from_quaternion
+import math
+
 
 
 
@@ -95,7 +96,9 @@ class PathPlanner(Node):
         self.robot1_x = msg.pose.pose.position.x
         self.robot1_y = msg.pose.pose.position.y
         q = msg.pose.pose.orientation
-        _, _, self.robot1_theta = euler_from_quaternion((q.x, q.y, q.z, q.w))
+        siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
+        cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        self.robot1_theta = math.atan2(siny_cosp, cosy_cosp)
         self.get_logger().info(
             f"robot1 position=({self.robot1_x:.2f}, {self.robot1_y:.2f})")
 
@@ -103,7 +106,9 @@ class PathPlanner(Node):
         self.robot2_x = msg.pose.pose.position.x
         self.robot2_y = msg.pose.pose.position.y - self.robot2_offset
         q = msg.pose.pose.orientation
-        _, _, self.robot2_theta = euler_from_quaternion((q.x, q.y, q.z, q.w))
+        siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
+        cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        self.robot2_theta = math.atan2(siny_cosp, cosy_cosp)
         self.get_logger().info(
             f"robot2 position=({self.robot2_x:.2f}, {self.robot2_y:.2f})")
     
