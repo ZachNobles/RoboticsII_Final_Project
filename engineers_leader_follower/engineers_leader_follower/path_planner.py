@@ -52,7 +52,7 @@ class PathPlanner(Node):
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
     def odom_callback(self, msg):
-        self.get_logger().debug(f"Received odometry message from {msg.header.frame_id}: position=({msg.pose.pose.position.x:.2f}, {msg.pose.pose.position.y:.2f})")
+        self.get_logger().info(f"Received odometry message from {msg.header.frame_id}: position=({msg.pose.pose.position.x:.2f}, {msg.pose.pose.position.y:.2f})")
         if "robot1" in msg.header.frame_id:
             self.robot1_x = msg.pose.pose.position.x
             self.robot1_y = msg.pose.pose.position.y
