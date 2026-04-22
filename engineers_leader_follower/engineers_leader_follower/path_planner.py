@@ -3,6 +3,7 @@ from platform import node
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
 
 import numpy as np
 
@@ -15,6 +16,10 @@ class PathPlanner(Node):
 
         self.robot1_publisher = self.create_publisher(Twist, "/robot1/cmd_vel", 10)
         self.robot2_publisher = self.create_publisher(Twist, "/robot2/cmd_vel", 10)
+
+        self.subscription = self.create_subscription(Odometry, "/robot1/odom", self.odom_callback, 10)
+        self.subscription = self.create_subscription(Odometry, "/robot2/odom", self.odom_callback, 10)
+        
 
         self.robot2_offset = 0.4
 
@@ -46,6 +51,15 @@ class PathPlanner(Node):
         timer_period = 0.05 # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
+    def odom_callback(self, msg):
+        if msg.header.frame_id == "robot1/odom":
+            self.robot1_x = msg.pose.pose.position.x
+            self.robot1_y = msg.pose.pose.position.y
+            self.robot1_theta = self.get_yaw_from_quaternion(msg.pose.pose.orientation)
+        elif msg.header.frame_id == "robot2/odom":
+            self.robot2_x = msg.pose.pose.position.x
+            self.robot2_y = msg.pose.pose.position.y - self.robot2_offset
+            self.robot2_theta = self.get_yaw_from_quaternion(msg.pose.pose.orientation)
     
     def calculate_path_distance(self):
         sum = 0.0
@@ -113,10 +127,6 @@ class PathPlanner(Node):
         self.get_logger().info(f"Robot 1 position: ({self.robot1_x:.2f}, {self.robot1_y:.2f}), Robot 2 position: ({self.robot2_x:.2f}, {self.robot2_y:.2f})")
         self.get_logger().info(f"Published velocities - Robot1: ({robot1_msg.linear.x:.2f}, {robot1_msg.linear.y:.2f}), Robot2: ({robot2_msg.linear.x:.2f}, {robot2_msg.linear.y:.2f})")
 
-        self.robot1_x += robot1_msg.linear.x * 0.05
-        self.robot1_y += robot1_msg.linear.y * 0.05
-        self.robot2_x += robot2_msg.linear.x * 0.05
-        self.robot2_y += robot2_msg.linear.y * 0.05
     
     def shutdown(self):
         self.get_logger().info(f"{self.get_name()} is shutting down")
