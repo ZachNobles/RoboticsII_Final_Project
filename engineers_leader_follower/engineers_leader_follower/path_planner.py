@@ -16,6 +16,7 @@ import numpy as np
 class PathPlanner(Node):
     def __init__(self):
         super().__init__("path_planner")
+        self.robot2_offset = 0.4
 
         self.get_logger().info(f"{self.get_name()} has been started")
 
@@ -33,11 +34,6 @@ class PathPlanner(Node):
         self._pose_reset_done = False
         self.create_timer(1.0, self.reset_poses)
 
-        # Give the publisher time to connect, then publish once
-        self.create_timer(1.0, self.reset_poses)
-        self._pose_reset_done = False
-
-        self.robot2_offset = 0.4
 
         self.goal_points = [
             (2.0, 0.0),
@@ -153,12 +149,12 @@ class PathPlanner(Node):
                 
                 else:
                     self.get_logger().info("All goal points reached. Stopping robots.")
-                    self.shutdown()
 
                     self.get_logger().info(f"robot 1 points: {self.robot1_all_points}")
                     self.get_logger().info(f"robot 2 points: {self.robot2_all_points}")
 
                     self.get_logger().info("Shutting down node...")
+                    self.shutdown()
                     rclpy.shutdown()
                 
         if self.robot1_goal is not None:
