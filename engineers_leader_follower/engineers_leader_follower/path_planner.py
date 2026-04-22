@@ -17,8 +17,8 @@ class PathPlanner(Node):
         self.robot1_publisher = self.create_publisher(Twist, "/robot1/cmd_vel", 10)
         self.robot2_publisher = self.create_publisher(Twist, "/robot2/cmd_vel", 10)
 
-        self.subscription = self.create_subscription(Odometry, "/robot1/odometry/filtered", self.odom_callback, 10)
-        self.subscription = self.create_subscription(Odometry, "/robot2/odometry/filtered", self.odom_callback, 10)
+        self.robot1_odom_subscriber = self.create_subscription(Odometry, "/robot1/odometry/filtered", self.odom_callback, 10)
+        self.robot2_odom_subscriber = self.create_subscription(Odometry, "/robot2/odometry/filtered", self.odom_callback, 10)
         
 
         self.robot2_offset = 0.4
@@ -52,11 +52,11 @@ class PathPlanner(Node):
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
     def odom_callback(self, msg):
-        if msg.header.frame_id == "robot1/odom":
+        if "robot1" in msg.header.frame_id:
             self.robot1_x = msg.pose.pose.position.x
             self.robot1_y = msg.pose.pose.position.y
             self.robot1_theta = self.get_yaw_from_quaternion(msg.pose.pose.orientation)
-        elif msg.header.frame_id == "robot2/odom":
+        elif "robot2" in msg.header.frame_id:
             self.robot2_x = msg.pose.pose.position.x
             self.robot2_y = msg.pose.pose.position.y - self.robot2_offset
             self.robot2_theta = self.get_yaw_from_quaternion(msg.pose.pose.orientation)
