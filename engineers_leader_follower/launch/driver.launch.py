@@ -16,7 +16,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 from launch.actions import GroupAction
 from launch_ros.actions import PushRosNamespace
-from launch.substitutions import PythonExpression
+from launch.substitutions import PathJoinSubstitution
+
 
 
 print("---------------------robot_type = x3---------------------")
@@ -90,7 +91,7 @@ def generate_launch_description():
 
     ekf_config = os.path.join(
         get_package_share_directory('robot_localization'),
-        'param',
+        'params',
         'ekf_x1_x3.yaml'   # use whatever your actual yaml filename is
     )
 
@@ -99,17 +100,11 @@ def generate_launch_description():
         executable='ekf_node',
         name='ekf_filter_node',
         output='screen',
-        parameters=[ekf_config],
-        remappings=[
-            # EKF wants /odom_raw, remap it to the namespaced topic your base_node publishes
-            ('/odom_raw', PythonExpression([
-                "'/", LaunchConfiguration('robot_name'), "/odom_raw'"
-            ])),
-            # Also remap the EKF output if anything else subscribes to it by namespace
-            ('/odometry/filtered', PythonExpression([
-                "'/", LaunchConfiguration('robot_name'), "/odometry/filtered'"
-            ])),
-        ]
+        parameters=[
+            ekf_config,
+            {'odom0': PathJoinSubstitution(['/', LaunchConfiguration('robot_name'), 'odom_raw'])},
+            {'imu0':  PathJoinSubstitution(['/', LaunchConfiguration('robot_name'), 'imu/data'])},
+        ],
     )
 
     yahboom_joy_node = Node(
