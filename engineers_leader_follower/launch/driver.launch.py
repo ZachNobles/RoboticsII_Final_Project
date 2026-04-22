@@ -18,6 +18,8 @@ from launch.actions import GroupAction
 from launch_ros.actions import PushRosNamespace
 import yaml
 import tempfile
+import os
+import sys
 
 def patch_params(d, robot_name):
     for key in list(d.keys()):
@@ -106,12 +108,16 @@ def generate_launch_description():
         'ekf_x1_x3.yaml'   # use whatever your actual yaml filename is
     )
 
+    robot_name = 'robot1'
+    for arg in sys.argv:
+        if arg.startswith('robot_name:='):
+            robot_name = arg.split(':=')[1]
+            break
 
     ekf_config_src = '/root/yahboomcar_ros2_ws/software/library_ws/src/robot_localization/params/ekf_x1_x3.yaml'
     with open(ekf_config_src, 'r') as f:
         ekf_params = yaml.safe_load(f)
 
-    robot_name = LaunchConfiguration('robot_name').perform(None)  # get the value of the robot_name argument
     patched = patch_params(ekf_params, robot_name)
 
     tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False)
