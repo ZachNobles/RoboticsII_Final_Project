@@ -59,14 +59,13 @@ class PathPlanner(Node):
         self.robot1_theta = math.atan2(siny_cosp, cosy_cosp)
 
         if not self._goals_initialized:
-            self.goal_points = [(p[0] + self.robot1_x, p[1] + self.robot1_y) 
-                                for p in self.goal_points]
-            self.current_goal_point = self.goal_points[0]
-            self.robot1_goal = self.goal_points[0]
+            self.goal_points = [(p[0] + self.robot1_x, p[1] + self.robot1_y) for p in self.goal_points]
+            self.current_goal_point = self.goal_points.pop(0)
+            self.robot1_goal = self.current_goal_point
             self.robot2_end_goal = (self.goal_points[-1][0], 
                                     self.goal_points[-1][1] - self.robot2_offset)
             self._goals_initialized = True
-            self.get_logger().info(f"Goals initialized relative to start: {self.goal_points}")
+            self.get_logger().info(f"Goals initialized. First: {self.current_goal_point}, Remaining: {self.goal_points}")
 
     def robot2_odom_callback(self, msg):
         self.robot2_x = msg.pose.pose.position.x
