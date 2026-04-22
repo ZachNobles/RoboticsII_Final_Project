@@ -4,6 +4,8 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import PoseWithCovarianceStamped
+
 
 import numpy as np
 
@@ -17,9 +19,20 @@ class PathPlanner(Node):
         self.robot1_publisher = self.create_publisher(Twist, "/robot1/cmd_vel", 10)
         self.robot2_publisher = self.create_publisher(Twist, "/robot2/cmd_vel", 10)
 
-        self.robot1_odom_subscriber = self.create_subscription(Odometry, "/robot1/odometry/filtered", self.odom_callback, 10)
-        self.robot2_odom_subscriber = self.create_subscription(Odometry, "/robot2/odometry/filtered", self.odom_callback, 10)
+        self.robot1_odom_subscriber = self.create_subscription(Odometry, "/robot1/odometry/filtered", self.robot1_odom_callback, 10)
+        self.robot2_odom_subscriber = self.create_subscription(Odometry, "/robot2/odometry/filtered", self.robot2_odom_callback, 10)
         
+        self.robot1_set_pose_pub = self.create_publisher(
+            PoseWithCovarianceStamped, '/robot1/set_pose', 10)
+        self.robot2_set_pose_pub = self.create_publisher(
+            PoseWithCovarianceStamped, '/robot2/set_pose', 10)
+
+        self._pose_reset_done = False
+        self.create_timer(1.0, self.reset_poses)
+
+        # Give the publisher time to connect, then publish once
+        self.create_timer(1.0, self.reset_poses)
+        self._pose_reset_done = False
 
         self.robot2_offset = 0.4
 
@@ -50,17 +63,45 @@ class PathPlanner(Node):
         self.velocity = 0.5
         timer_period = 0.05 # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
+    
+    def reset_poses(self, ):
+        if self._pose_reset_done:
+            return
 
-    def odom_callback(self, msg):
-        self.get_logger().info(f"Received odometry message from {msg.header.frame_id}: position=({msg.pose.pose.position.x:.2f}, {msg.pose.pose.position.y:.2f})")
-        if "robot1" in msg.header.frame_id:
-            self.robot1_x = msg.pose.pose.position.x
-            self.robot1_y = msg.pose.pose.position.y
-            self.robot1_theta = self.get_yaw_from_quaternion(msg.pose.pose.orientation)
-        elif "robot2" in msg.header.frame_id:
-            self.robot2_x = msg.pose.pose.position.x
-            self.robot2_y = msg.pose.pose.position.y - self.robot2_offset
-            self.robot2_theta = self.get_yaw_from_quaternion(msg.pose.pose.orientation)
+        stamp = self.get_clock().now().to_msg()
+
+        # Robot 1 -> (0, 0)
+        msg1 = PoseWithCovarianceStamped()
+        msg1.header.stamp = stamp
+        msg1.header.frame_id = 'odom'
+        # x, y default to 0.0 already
+        self.robot1_set_pose_pub.publish(msg1)
+
+        # Robot 2 -> (0, -robot2_offset)
+        msg2 = PoseWithCovarianceStamped()
+        msg2.header.stamp = stamp
+        msg2.header.frame_id = 'odom'
+        msg2.pose.pose.position.y = -self.robot2_offset
+        self.robot2_set_pose_pub.publish(msg2)
+
+        self._pose_reset_done = True
+        self.get_logger().info(
+            f"Reset robot1 to (0, 0), robot2 to (0, {-self.robot2_offset})")
+    
+
+    def robot1_odom_callback(self, msg):
+        self.robot1_x = msg.pose.pose.position.x
+        self.robot1_y = msg.pose.pose.position.y
+        self.robot1_theta = self.get_yaw_from_quaternion(msg.pose.pose.orientation)
+        self.get_logger().info(
+            f"robot1 position=({self.robot1_x:.2f}, {self.robot1_y:.2f})")
+
+    def robot2_odom_callback(self, msg):
+        self.robot2_x = msg.pose.pose.position.x
+        self.robot2_y = msg.pose.pose.position.y - self.robot2_offset
+        self.robot2_theta = self.get_yaw_from_quaternion(msg.pose.pose.orientation)
+        self.get_logger().info(
+            f"robot2 position=({self.robot2_x:.2f}, {self.robot2_y:.2f})")
     
     def calculate_path_distance(self):
         sum = 0.0
